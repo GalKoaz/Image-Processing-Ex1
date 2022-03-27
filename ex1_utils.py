@@ -33,8 +33,7 @@ def myID() -> np.int:
     Return my ID (not the friend's ID I copied from)
     :return: int
     """
-    # identification number
-    return 206260168
+    return 206260168  # identification number
 
 
 def imReadAndConvert(filename: str, representation: int) -> np.ndarray:
@@ -60,7 +59,6 @@ def imDisplay(filename: str, representation: int):
     :param representation: GRAY_SCALE or RGB
     :return: None
     """
-    # Read and Convert the image and check if the image is load gray we plot with gray scale
     image = imReadAndConvert(filename, representation)
     plt.imshow(image)
     if representation == LOAD_GRAY_SCALE:
@@ -74,10 +72,9 @@ def transformRGB2YIQ(imgRGB: np.ndarray) -> np.ndarray:
     :param imgRGB: An Image in RGB
     :return: A YIQ in image color space
     """
-    # .Dot product of two arrays.
-    # .T The transposed array, Same as self.transpose().
-    if imgRGB.shape == 3:
-        return imgRGB.dot(YIQ2RGB.T)
+
+    if len(imgRGB.shape) == 3:  # .Dot product of two arrays.
+        return imgRGB.dot(YIQ2RGB.T)  # .T The transposed array, Same as self.transpose().
 
 
 def transformYIQ2RGB(imgYIQ: np.ndarray) -> np.ndarray:
@@ -86,10 +83,8 @@ def transformYIQ2RGB(imgYIQ: np.ndarray) -> np.ndarray:
     :param imgYIQ: An Image in YIQ
     :return: A RGB in image color space
     """
-    # .Dot product of two arrays.
-    # .T The transposed array, Same as self.transpose().
-    if imgYIQ.shape == 3:
-        return imgYIQ.dot(YIQ2RGB.T)
+    if len(imgYIQ.shape) == 3:  # .Dot product of two arrays.
+        return imgYIQ.dot(YIQ2RGB.T)  # .T The transposed array, Same as self.transpose().
 
 
 def hsitogramEqualize(imgOrig: np.ndarray) -> (np.ndarray, np.ndarray, np.ndarray):
@@ -98,45 +93,33 @@ def hsitogramEqualize(imgOrig: np.ndarray) -> (np.ndarray, np.ndarray, np.ndarra
         :param imgOrig: Original Histogram
         :ret
     """
-    image = transformRGB2YIQ(cv2.normalize(imgOrig.astype('double'), None, 0.0, 1.0, cv2.NORM_MINMAX))
-    if len(imgOrig.shape) == 3:
-        img_eq = cv2.normalize(image[:, :, 0], None, 0, 255, cv2.NORM_MINMAX).astype('uint8')
-    else:
-        img_eq = (imgOrig * 255).astype('uint8')
+    img = np.copy(imgOrig)  # make copy of the image
+    yiq = transformRGB2YIQ(img)  # transform RGB to YIQ
+    if len(imgOrig.shape) == 3:  # if the image is rgb
+        img = yiq[:, :, 0]  # working on y channel
+    img = (cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)).astype('uint8')  # Normalize [0, 255]
+    hist = np.histogram(img, range=(0, 255), bins=256)  # Creating the histogram in range 0, 255
+    cumsum = np.array(np.cumsum(hist[0]))  # Calculate cumsum of histogram
 
-    hist_org, bins = np.histogram(img_eq.flatten(), 256, [0, 256])
+    lut = list()  # Creating the lut list
 
-    # Instillation of Plot 1 with the settings: title, the plot and the histogram
+    for i in range(len(cumsum)):  # creating look up table
+        lut.append(np.ceil((cumsum[i] * 255) / (img.shape[0] * img.shape[1])))
 
-    # figure, (plot1, plot2) = plt.subplots(1, 2, figsize=(12, 7))
-    # plot1.set_title('Original Image Histogram & CDF')
-    # plot1.plot((hist_org.cumsum() * hist_org.max()) / hist_org.cumsum().max(), color='blue')
-    # plot1.hist(img_eq.flatten(), 256, [0, 256], color='red')
-    # plot1.legend(('CDF', 'Histogram'), loc='best')
+    for i in range(img.shape[0]):
+        for j in range(img.shape[1]):
+            if img[i][j] < 255:
+                img[i][j] = lut[img[i][j]]  # changing img as the LUT
 
-    # Equalized Image with linear CDF Masked arrays are arrays that may have missing or invalid entries.
-    # The numpy.ma module provides a nearly work-alike replacement for numpy that supports data arrays with masks.
-    cdf_m = np.ma.masked_equal(hist_org.cumsum(), 0)
-    cdf_m = (cdf_m - cdf_m.min()) * 255 / (cdf_m.max() - cdf_m.min())
-    linear_img = np.ma.filled(cdf_m, 0).astype('uint8')[img_eq]
-    hist_eq, bins = np.histogram(linear_img.flatten(), 256, [0, 255])
+    his_new = np.histogram(img, range=(0, 255), bins=256)  # Creating new histogram in range 0, 255
 
-    # plot2.set_title('Post-Equalization Image Histogram & CDF ')
-    # plot2.plot(hist_eq.cumsum() * hist_eq.max() / hist_eq.cumsum().max(), color='blue')
-    # plot2.hist(linear_img.flatten(), 256, [0, 255], color='red')
-    # plot2.legend(('CDF', 'Histogram'), loc='best')
-    # plt.xlim([0, 256])
-    # plt.show()
-
-    # Needing to Transform equalized image back to RGB If the image is 8-bit unsigned, it is displayed as is. If the
-    # image is 16-bit unsigned or 32-bit integer, the pixels are divided by 256. That is, the value range [0,
-    # 255*256] is mapped to [0,255]. If the image is 32-bit floating-point, the pixel values are multiplied by 255.
-    # That is, the value range [0,1] is mapped to [0,255].
-    if len(imgOrig.shape) == 3:
-        image[:, :, 0] = cv2.normalize(img_eq.astype('double'), None, 0.0, 1.0, cv2.NORM_MINMAX)
-        img_eq = (transformYIQ2RGB(image) * 255).astype('uint8')
-    img_eq = cv2.LUT(img_eq, np.ma.filled(cdf_m, 0).astype('uint8'))
-    return img_eq, hist_org, hist_eq
+    if len(imgOrig.shape) != 3:  # if the image is gray
+        return img, hist[0], his_new[0]
+    else:  # if the image is rgb we need to convert
+        img = img / 255
+        yiq[:, :, 0] = img
+        img = transformYIQ2RGB(yiq)
+        return img, hist[0], his_new[0]
 
 
 def quantizeImage(imOrig: np.ndarray, nQuant: int, nIter: int) -> (List[np.ndarray], List[float]):
@@ -148,4 +131,3 @@ def quantizeImage(imOrig: np.ndarray, nQuant: int, nIter: int) -> (List[np.ndarr
         :return: (List[qImage_i],List[error_i])
     """
     pass
-
