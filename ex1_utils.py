@@ -100,9 +100,7 @@ def hsitogramEqualize(imgOrig: np.ndarray) -> (np.ndarray, np.ndarray, np.ndarra
     img = (cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)).astype('uint8')  # Normalize [0, 255]
     hist = np.histogram(img, range=(0, 255), bins=256)  # Creating the histogram in range 0, 255
     cumsum = np.array(np.cumsum(hist[0]))  # Calculate cumsum of histogram
-
     lut = list()  # Creating the lut list
-
     for i in range(len(cumsum)):  # creating look up table
         lut.append(np.ceil((cumsum[i] * 255) / (img.shape[0] * img.shape[1])))
 
@@ -116,8 +114,7 @@ def hsitogramEqualize(imgOrig: np.ndarray) -> (np.ndarray, np.ndarray, np.ndarra
     if len(imgOrig.shape) != 3:  # if the image is gray
         return img, hist[0], his_new[0]
     else:  # if the image is rgb we need to convert
-        img = img / 255
-        yiq[:, :, 0] = img
+        yiq[:, :, 0] = img / 255
         img = transformYIQ2RGB(yiq)
         return img, hist[0], his_new[0]
 
@@ -130,4 +127,7 @@ def quantizeImage(imOrig: np.ndarray, nQuant: int, nIter: int) -> (List[np.ndarr
         :param nIter: Number of optimization loops
         :return: (List[qImage_i],List[error_i])
     """
+    # Creating a list's we need to return
+    error = list()
+    img = list()
     pass
