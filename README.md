@@ -6,7 +6,6 @@
   <summary>Content</summary>
   <ol>
     <li><a href="#about-the-project">About The Project</a></li>
-    <li><a href="#plot-graph">Plot Graph</a></li>
     <li><a href="#languages-and-tools">Languages and Tools</a></li>
     <li><a href="#acknowledgements">Acknowledgements</a></li>
     <li><a href="#contact">Contact</a></li>
@@ -29,24 +28,18 @@ image processing facilities. This exercise covers:
 * Performing optimal quantization
 
 
+``` Version Python 3.9```
 
-----------------
+## Gamma Correction
 
-<!-- Plot Graph -->
-### Plot Graph
+<a href=""><img src="https://i.ibb.co/0r7RKML/2.png" alt="2" border="0"></a>
 
-<p align="center">
-<img align="center" src="https://s10.gifyu.com/images/myplot.png"/>
-</p>
-(For zoom in click on the image)
+<a href=""><img src="https://i.ibb.co/R2ch5D4/1.png" alt="1" border="0"></a>
 
-In this project we were asked to display the graph visually,
-
-we chose to represent the graph using matplotlib  that allows uploading a graph using a JSON file.
-
-----------------
+<a href=""><img src="https://i.ibb.co/pzr4dTk/3.png" alt="3" border="0"></a>
 
 
+---------------------
 
 ## Languages and Tools
 
