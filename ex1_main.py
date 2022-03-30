@@ -63,11 +63,11 @@ def main():
 
     # Image histEq
     # histEqDemo(img_path, LOAD_GRAY_SCALE)
-    histEqDemo(img_path, LOAD_RGB)
+    # histEqDemo(img_path, LOAD_RGB)
 
     # # Image Quantization
-    # quantDemo(img_path, LOAD_GRAY_SCALE)
-    # quantDemo(img_path, LOAD_RGB)
+    quantDemo(img_path, LOAD_GRAY_SCALE)
+    quantDemo(img_path, LOAD_RGB)
 
     # Gamma
     # gammaDisplay(img_path, LOAD_GRAY_SCALE)
