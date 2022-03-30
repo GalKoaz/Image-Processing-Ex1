@@ -32,11 +32,12 @@ image processing facilities. This exercise covers:
 
 ## Gamma Correction
 
-<a href=""><img src="https://i.ibb.co/0r7RKML/2.png" alt="2" border="0"></a>
+<img src="https://i.ibb.co/0r7RKML/2.png" alt="2" border="0">
 
-<a href=""><img src="https://i.ibb.co/R2ch5D4/1.png" alt="1" border="0"></a>
+<img src="https://i.ibb.co/R2ch5D4/1.png" alt="1" border="0">
 
-<a href=""><img src="https://i.ibb.co/pzr4dTk/3.png" alt="3" border="0"></a>
+<img src="https://i.ibb.co/pzr4dTk/3.png" alt="3" border="0">
+
 
 
 ---------------------
