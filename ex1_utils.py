@@ -23,9 +23,7 @@ import numpy as np
 
 LOAD_GRAY_SCALE = 1
 LOAD_RGB = 2
-YIQ2RGB = np.array([[0.299, 0.587, 0.114],
-                    [0.59590059, -0.27455667, -0.32134392],
-                    [0.21153661, -0.52273617, 0.31119955]])
+YIQ2RGB = np.array([[0.299, 0.587, 0.114], [0.596, -0.275, -0.321], [0.212, -0.523, 0.311]])
 
 
 def myID() -> np.int:
@@ -72,9 +70,7 @@ def transformRGB2YIQ(imgRGB: np.ndarray) -> np.ndarray:
     :param imgRGB: An Image in RGB
     :return: A YIQ in image color space
     """
-
-    if len(imgRGB.shape) == 3:  # .Dot product of two arrays.
-        return imgRGB.dot(YIQ2RGB.T)  # .T The transposed array, Same as self.transpose().
+    return np.dot(imgRGB, YIQ2RGB.T)  # .T The transposed array, Same as self.transpose().
 
 
 def transformYIQ2RGB(imgYIQ: np.ndarray) -> np.ndarray:
@@ -83,8 +79,7 @@ def transformYIQ2RGB(imgYIQ: np.ndarray) -> np.ndarray:
     :param imgYIQ: An Image in YIQ
     :return: A RGB in image color space
     """
-    if len(imgYIQ.shape) == 3:  # .Dot product of two arrays.
-        return imgYIQ.dot(YIQ2RGB.T)  # .T The transposed array, Same as self.transpose().
+    return np.dot(imgYIQ, np.linalg.inv(YIQ2RGB).T)  # .T The transposed array, Same as self.transpose().
 
 
 def hsitogramEqualize(imgOrig: np.ndarray) -> (np.ndarray, np.ndarray, np.ndarray):
@@ -93,30 +88,28 @@ def hsitogramEqualize(imgOrig: np.ndarray) -> (np.ndarray, np.ndarray, np.ndarra
         :param imgOrig: Original Histogram
         :ret
     """
-    img = np.copy(imgOrig)  # make copy of the image
-    yiq = transformRGB2YIQ(img)  # transform RGB to YIQ
-    if len(imgOrig.shape) == 3:  # if the image is rgb
-        img = yiq[:, :, 0]  # working on y channel
-    img = (cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX)).astype('uint8')  # Normalize [0, 255]
-    hist = np.histogram(img, range=(0, 255), bins=256)  # Creating the histogram in range 0, 255
-    cumsum = np.array(np.cumsum(hist[0]))  # Calculate cumsum of histogram
-    lut = list()  # Creating the lut list
-    for i in range(len(cumsum)):  # creating look up table
-        lut.append(np.ceil((cumsum[i] * 255) / (img.shape[0] * img.shape[1])))
+    img = np.copy(imgOrig)
+    if img.ndim == 3:
+        img_yiq = transformRGB2YIQ(imgOrig)  # Convert to YIQ
+        imgOrig = np.copy(img_yiq[:, :, 0])  # We Saving the  Y channel
+    else:  # Case grayscale
+        img_yiq = imgOrig
+    imgOrig = imgOrig * 255
+    imgOrig = (np.around(imgOrig)).astype('uint8')  # Rounding the values, cast the matrix to integers
+    hist, bins = np.histogram(imgOrig.flatten(), 256, [0, 255])  # Creating the histogram of the original image
+    cumsum = hist.cumsum()  # calculate "Cumsum"
+    imgScale = np.ma.masked_equal(cumsum, 0)
+    imgScale = (imgScale - imgScale.min()) * 255 / (imgScale.max() - imgScale.min())  # Scaling to our histogram
+    after_scale = np.ma.filled(imgScale, 0).astype('uint8')  # cast the matrix values to integers
 
-    for i in range(img.shape[0]):
-        for j in range(img.shape[1]):
-            if img[i][j] < 255:
-                img[i][j] = lut[img[i][j]]  # changing img as the LUT
+    imgEq = after_scale[imgOrig.astype('uint8')]  # mapping every point in "Cumsum" to new point
+    histEQ, bins2 = np.histogram(imgEq.flatten(), 256, [0, 256])  # Creating the histogram of the new image
 
-    his_new = np.histogram(img, range=(0, 255), bins=256)  # Creating new histogram in range 0, 255
+    if img.ndim == 3:  # Checking if the image is RGB
+        img_yiq[:, :, 0] = imgEq / 255
+        imgEq = transformYIQ2RGB(img_yiq)  # Convert back to RGB
 
-    if len(imgOrig.shape) != 3:  # if the image is gray
-        return img, hist[0], his_new[0]
-    else:  # if the image is rgb we need to convert.
-        yiq[:, :, 0] = img / 255
-        img = transformYIQ2RGB(yiq)
-        return img, hist[0], his_new[0]
+    return imgEq, hist, histEQ
 
 
 def quantizeImage(imOrig: np.ndarray, nQuant: int, nIter: int) -> (List[np.ndarray], List[float]):
@@ -127,4 +120,50 @@ def quantizeImage(imOrig: np.ndarray, nQuant: int, nIter: int) -> (List[np.ndarr
         :param nIter: Number of optimization loops
         :return: (List[qImage_i],List[error_i])
     """
-    pass
+    img = np.copy(imOrig)
+    if img.ndim == 3:
+        imgYIQ = transformRGB2YIQ(imOrig)  # Convert to YIQ
+        imOrig = np.copy(imgYIQ[:, :, 0])  # We Saving the  Y channel
+    else:  # Case grayscale
+        imgYIQ = imOrig
+
+    imOrig = cv2.normalize(imOrig, None, 0, 255, cv2.NORM_MINMAX)  # Normalize to [0, 255]
+    imOrig = imOrig.astype('uint8')  # Casting the matrix to integers
+    hist, bins = np.histogram(imOrig, 256, [0, 255])  # Calculate a histogram of the original image
+
+    # Find The boundaries
+    z = np.zeros(nQuant + 1, dtype=int)  # _Z is an array that will represents the boundaries
+    for i in range(1, nQuant):
+        z[i] = z[i - 1] + int(255 / nQuant)  # Divide the intervals
+    z[nQuant] = 255  # The left border will always start at 0 and the right border will always end at 255
+    q = np.zeros(nQuant)  # _Q is an array that represent the values of the boundaries
+
+    images_list = list()  # Creating image return list
+    mse_list = list()  # Creating mse errors return list
+
+    for i in range(nIter):
+        img_new = np.zeros(imOrig.shape)  # Initialize a matrix with 0 in the original image size
+        for j in range(len(q)):  # Every j is a cell
+            if j == len(q) - 1:  # The last iterate of j
+                right = z[j + 1] + 1
+            else:
+                right = z[j + 1]
+            range_cell = np.arange(z[j], right)
+            q[j] = np.average(range_cell, weights=hist[z[j]:right])
+            mat = np.logical_and(imOrig >= z[j], imOrig < right)  # Matrix that is initialized in T/F
+            img_new[mat] = q[j]  # Where there is a T  in the matrix we will update the new value
+        mse_list.append(np.sum(np.square(np.subtract(img_new, imOrig))) / imOrig.size)  # According to mse formula
+
+        if img.ndim == 3:
+            imgYIQ[:, :, 0] = img_new / 255
+            img_new = transformYIQ2RGB(imgYIQ)  # Convert back to RGB
+        images_list.append(img_new)  # we appending the image to the images list
+
+        for boundary in range(1, len(z) - 1):  # Each boundary become to be a middle of 2 means
+            z[boundary] = (q[boundary - 1] + q[boundary]) / 2
+
+        if len(mse_list) >= 2:
+            if np.abs(mse_list[-1] - mse_list[-2]) <= 0.000001:
+                break
+
+    return images_list, mse_list

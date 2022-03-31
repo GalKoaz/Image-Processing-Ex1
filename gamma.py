@@ -43,7 +43,7 @@ def gammaDisplay(img_path: str, rep: int):
 
 
 def main():
-    gammaDisplay('wave.jpg', LOAD_RGB)
+    gammaDisplay('testImg1.jpg', LOAD_RGB)
 
 
 if __name__ == '__main__':
