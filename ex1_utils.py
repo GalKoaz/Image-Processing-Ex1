@@ -98,9 +98,9 @@ def hsitogramEqualize(imgOrig: np.ndarray) -> (np.ndarray, np.ndarray, np.ndarra
     imgOrig = (np.around(imgOrig)).astype('uint8')  # Rounding the values, cast the matrix to integers
     hist, bins = np.histogram(imgOrig.flatten(), 256, [0, 255])  # Creating the histogram of the original image
     cumsum = hist.cumsum()  # calculate "Cumsum"
-    imgScale = np.ma.masked_equal(cumsum, 0)
-    imgScale = (imgScale - imgScale.min()) * 255 / (imgScale.max() - imgScale.min())  # Scaling to our histogram
-    after_scale = np.ma.filled(imgScale, 0).astype('uint8')  # cast the matrix values to integers
+    img_scale = np.ma.masked_equal(cumsum, 0)
+    img_scale = (img_scale - img_scale.min()) * 255 / (img_scale.max() - img_scale.min())  # Scaling to our histogram
+    after_scale = np.ma.filled(img_scale, 0).astype('uint8')  # cast the matrix values to integers
 
     imgEq = after_scale[imgOrig.astype('uint8')]  # mapping every point in "Cumsum" to new point
     histEQ, bins2 = np.histogram(imgEq.flatten(), 256, [0, 256])  # Creating the histogram of the new image
@@ -132,11 +132,11 @@ def quantizeImage(imOrig: np.ndarray, nQuant: int, nIter: int) -> (List[np.ndarr
     hist, bins = np.histogram(imOrig, 256, [0, 255])  # Calculate a histogram of the original image
 
     # Find The boundaries
-    z = np.zeros(nQuant + 1, dtype=int)  # _Z is an array that will represents the boundaries
+    z = np.zeros(nQuant + 1, dtype=int)  # z is an array that will represents the boundaries
     for i in range(1, nQuant):
         z[i] = z[i - 1] + int(255 / nQuant)  # Divide the intervals
     z[nQuant] = 255  # The left border will always start at 0 and the right border will always end at 255
-    q = np.zeros(nQuant)  # _Q is an array that represent the values of the boundaries
+    q = np.zeros(nQuant)  # q is an array that represent the values of the boundaries
 
     images_list = list()  # Creating image return list
     mse_list = list()  # Creating mse errors return list
@@ -151,7 +151,7 @@ def quantizeImage(imOrig: np.ndarray, nQuant: int, nIter: int) -> (List[np.ndarr
             range_cell = np.arange(z[j], right)
             q[j] = np.average(range_cell, weights=hist[z[j]:right])
             mat = np.logical_and(imOrig >= z[j], imOrig < right)  # Matrix that is initialized in T/F
-            img_new[mat] = q[j]  # Where there is a T  in the matrix we will update the new value
+            img_new[mat] = q[j]  # Where there is a T in the matrix we will update the new value
         mse_list.append(np.sum(np.square(np.subtract(img_new, imOrig))) / imOrig.size)  # According to mse formula
 
         if img.ndim == 3:
